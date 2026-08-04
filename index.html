@@ -368,16 +368,32 @@
         if (btn) { btn.classList.add('listening'); if (currentVoiceBtnId === 'voiceButton') btn.textContent = 'Ouvindo...'; }
         if (currentVoiceInputId === 'descricao') setVoiceState('Ouvindo...', true);
       };
+
       speechRecognition.onresult = function(event) {
-        let interimText = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = String(event.results[i][0].transcript || '').trim();
-          if (!transcript) continue;
-          if (event.results[i].isFinal) speechFinalText = joinTextParts(speechFinalText, transcript);
-          else interimText = joinTextParts(interimText, transcript);
+      let currentFinal = '';
+      let currentInterim = '';
+      
+      // Reconstrói a frase inteira a cada atualização para evitar palavras duplicadas
+      for (let i = 0; i < event.results.length; i++) {
+        const transcript = String(event.results[i][0].transcript || '');
+        if (!transcript.trim()) continue;
+        
+        if (event.results[i].isFinal) {
+          currentFinal += transcript + ' ';
+        } else {
+          currentInterim += transcript;
         }
-        applySpeechText(interimText);
-      };
+      }
+      
+      const targetInput = document.getElementById(currentVoiceInputId);
+      if (!targetInput) return;
+      
+      // Junta o texto que já existia na caixa com a nova gravação limpa
+      const combinedSpeech = joinTextParts(currentFinal, currentInterim);
+      targetInput.value = joinTextParts(speechBaseText, combinedSpeech);
+      targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+      
       speechRecognition.onerror = function(event) {
         if (currentVoiceInputId === 'descricao') setVoiceState('Não foi possível ouvir.', false);
       };
