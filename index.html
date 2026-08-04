@@ -360,20 +360,14 @@
       speechRecognition = new SpeechRecognition();
       speechRecognition.lang = 'pt-BR'; speechRecognition.continuous = true; speechRecognition.interimResults = true; speechRecognition.maxAlternatives = 1;
 
-      speechRecognition.onstart = function() {
-        const btn = document.getElementById(currentVoiceBtnId);
-        if (btn) btn.classList.remove('preparing');
-        if (!isHoldingPtt) { try { speechRecognition.stop(); } catch(e){} return; }
-        speechListening = true; speechBaseText = getValue(currentVoiceInputId); speechFinalText = '';
-        if (btn) { btn.classList.add('listening'); if (currentVoiceBtnId === 'voiceButton') btn.textContent = 'Ouvindo...'; }
-        if (currentVoiceInputId === 'descricao') setVoiceState('Ouvindo...', true);
-      };
 
-      speechRecognition.onresult = function(event) {
+
+
+speechRecognition.onresult = function(event) {
       let currentFinal = '';
       let currentInterim = '';
       
-      // Reconstrói a frase inteira a cada atualização para evitar palavras duplicadas
+      // Constrói a frase limpa
       for (let i = 0; i < event.results.length; i++) {
         const transcript = String(event.results[i][0].transcript || '');
         if (!transcript.trim()) continue;
@@ -384,15 +378,19 @@
           currentInterim += transcript;
         }
       }
+      speechFinalText = currentFinal.trim();
       
       const targetInput = document.getElementById(currentVoiceInputId);
       if (!targetInput) return;
       
-      // Junta o texto que já existia na caixa com a nova gravação limpa
-      const combinedSpeech = joinTextParts(currentFinal, currentInterim);
+      // Atualiza o campo em tempo real
+      const combinedSpeech = joinTextParts(speechFinalText, currentInterim);
       targetInput.value = joinTextParts(speechBaseText, combinedSpeech);
       targetInput.dispatchEvent(new Event('input', { bubbles: true }));
     };
+
+
+
       
       speechRecognition.onerror = function(event) {
         if (currentVoiceInputId === 'descricao') setVoiceState('Não foi possível ouvir.', false);
