@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Gestão de Não Conformidades</title>
+  
+  <!-- ESTILOS (Antigo Styles.html) -->
+  <style>
+    :root {
+      --bg: #f8fafc; --surface: #ffffff; --surface-soft: #f1f5f9;
+      --text: #0f172a; --muted: #64748b; --border: #e2e8f0; 
+      --primary: #12323f; --primary-strong: #0a1f27;
+      --danger-bg: #fef2f2; --danger-text: #991b1b; --danger-border: #fca5a5;
+      --warning-bg: #fffbeb; --warning-text: #92400e; --warning-border: #fcd34d;
+      --info-bg: #eff6ff; --info-text: #1e40af; --info-border: #93c5fd;
+      --success-bg: #f0fdf4; --success-text: #166534; --success-border: #86efac;
+      --radius: 16px; --radius-sm: 10px; --header-height: 64px; --nav-height: 76px;
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.03), 0 1px 2px rgba(15, 23, 42, 0.06);
+      --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { width: 100%; min-height: 100%; margin: 0; padding: 0; overflow-x: hidden; background: var(--bg); -webkit-text-size-adjust: 100%; }
+    body { color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.5; }
+    button, input, select, textarea { font-family: inherit; font-size: 16px; }
+    button { cursor: pointer; transition: all 0.2s ease-in-out; }
+    .hidden { display: none !important; }
+    #app { width: 100%; min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar { position: sticky; top: 0; z-index: 20; height: var(--header-height); display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+    .topbar h1 { margin: 0; font-size: 18px; font-weight: 700; color: var(--primary); letter-spacing: -0.025em; }
+    main, .container { width: 100%; padding: 16px 12px calc(var(--nav-height) + 24px); flex: 1; }
+    .section-title { margin: 4px 4px 16px; }
+    .section-title h2 { margin: 0; font-size: 20px; font-weight: 700; color: var(--text); }
+    .section-title p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+    .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 20px 16px; width: 100%; display: flex; flex-direction: column; gap: 16px; }
+    label { display: flex; flex-direction: column; gap: 6px; color: #475569; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    input, select, textarea { width: 100%; min-height: 48px; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); background: #ffffff; color: var(--text); outline: none; transition: all 0.2s; box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02); appearance: none; }
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 14px; padding-right: 40px; }
+    textarea { min-height: 100px; resize: none; line-height: 1.5; }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(18, 50, 63, 0.12), inset 0 1px 2px rgba(15, 23, 42, 0.02); }
+    .primary-button { width: 100%; min-height: 52px; border: 0; border-radius: var(--radius-sm); background: var(--primary); color: #ffffff; font-size: 16px; font-weight: 600; margin-top: 12px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(18, 50, 63, 0.2); }
+    .primary-button:active { background: var(--primary-strong); transform: scale(0.98); }
+    .primary-button:disabled { opacity: 0.5; pointer-events: none; box-shadow: none; }
+    .badge { display: inline-flex; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 700; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; }
+    .badge.status-ABERTA { color: var(--danger-text); background: var(--danger-bg); border-color: var(--danger-border); }
+    .badge.status-EM_ANALISE { color: var(--warning-text); background: var(--warning-bg); border-color: var(--warning-border); }
+    .badge.status-EM_ACAO { color: var(--info-text); background: var(--info-bg); border-color: var(--info-border); }
+    .badge.status-ENCERRADA { color: var(--success-text); background: var(--success-bg); border-color: var(--success-border); }
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+    .stat-card span { display: block; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; }
+    .stat-card strong { display: block; margin-top: 6px; font-size: 28px; font-weight: 700; color: var(--primary); }
+    .bottom-nav { position: fixed; z-index: 80; left: 0; right: 0; bottom: 0; height: var(--nav-height); display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 6px 16px calc(6px + env(safe-area-inset-bottom)); background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); border-top: 1px solid var(--border); }
+    .bottom-nav button { border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--muted); font-size: 11px; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+    .bottom-nav button span { font-size: 22px; transition: transform 0.2s; }
+    .bottom-nav button:active span { transform: scale(0.9); }
+    .bottom-nav button.active { background: rgba(18, 50, 63, 0.06); color: var(--primary); }
+    .observation-field { gap: 8px !important; display: flex; flex-direction: column; }
+    .observation-heading { display: flex !important; align-items: center; justify-content: space-between; gap: 10px; }
+    .observation-heading label { margin: 0; }
+    .voice-actions { display: flex; align-items: center; gap: 8px; }
+    .voice-button, .voice-clear-button { min-height: 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #ffffff; color: var(--primary); font-size: 13px; font-weight: 700; padding: 8px 10px; box-shadow: var(--shadow-sm); }
+    .voice-clear-button { color: var(--muted); }
+    .voice-status { min-height: 18px; color: var(--muted); font-size: 12px; }
+    .section-subtitle { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin: 16px 4px 8px; }
+    .evidence-card { background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+    .upload-btn { display: flex; align-items: center; justify-content: center; background: #ffffff; border: 1px dashed var(--muted); padding: 16px; border-radius: var(--radius-sm); color: var(--primary); font-weight: 600; cursor: pointer; }
+    .upload-btn input[type="file"] { display: none; }
+    .nota-box { display: flex; flex-direction: column; gap: 8px; }
+    .evidence-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+    .note-input-group { display: flex; gap: 8px; align-items: center; width: 100%; }
+    .note-input-group input { flex: 1; }
+    .voice-icon-btn { background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius-sm); width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--primary); flex-shrink: 0; transition: all 0.2s ease; }
+    .ptt-button { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
+    .voice-button.preparing, .voice-icon-btn.preparing { background: #fef08a; border-color: #facc15; color: #854d0e; }
+    .voice-button.listening, .voice-icon-btn.listening { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-text); animation: pulse-record 1.5s infinite; }
+    @keyframes pulse-record { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+    .cards-list { display: flex; flex-direction: column; gap: 16px; }
+    .nc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+    .nc-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .nc-card-header h3 { margin: 0; font-size: 16px; color: var(--primary); }
+    .nc-card-header .tipo { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+    .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+    .info-box small { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .info-box strong { display: block; font-size: 13px; color: var(--text); }
+    .description { font-size: 14px; background: var(--surface-soft); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 12px; }
+    .image-links { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .image-links a { background: var(--info-bg); color: var(--info-text); padding: 6px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; text-decoration: none; border: 1px solid var(--info-border); }
+    .alert { position: fixed; top: 16px; left: 16px; right: 16px; z-index: 100; padding: 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px; text-align: center; box-shadow: var(--shadow-lg); transition: all 0.3s; }
+    .alert.success { background: #10b981; color: #ffffff; }
+    .alert.error { background: #ef4444; color: #ffffff; }
+    .loading { position: fixed; inset: 0; background: rgba(255, 255, 255, 0.9); z-index: 200; display: none; place-content: center; place-items: center; text-align: center; }
+    .loading.active { display: grid; }
+    .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 420px) { .observation-heading { align-items: stretch; flex-direction: column; } .voice-actions { display: grid; grid-template-columns: 1fr auto; width: 100%; } .voice-button, .voice-clear-button { min-height: 46px; font-size: 14px; } }
+  </style>
+</head>
+<body>
+
+  <!-- ESTRUTURA HTML (Antigo Index.html) -->
+  <div id="app">
+    <header class="topbar">
+      <div><h1>Gest&atilde;o de NCs</h1></div>
+      <button class="icon-button" type="button" data-action="reload" title="Atualizar" aria-label="Atualizar">&#8635;</button>
+    </header>
+    <main class="container">
+      <section id="alert" class="alert hidden"></section>
+      
+      <section id="dashboardView" class="view">
+        <div class="section-title"><h2>Dashboard</h2><p>Resumo dos registros atuais.</p></div>
+        <div class="stats-grid">
+          <div class="stat-card"><span>Abertas</span><strong id="statAbertas">0</strong></div>
+          <div class="stat-card"><span>Encerradas</span><strong id="statEncerradas">0</strong></div>
+          <div class="stat-card"><span>Qtd. afetada</span><strong id="statQtd">0</strong></div>
+          <div class="stat-card"><span>Total</span><strong id="statTotal">0</strong></div>
+        </div>
+        <div class="section-title mt"><h2>NCs abertas</h2><p>Pend&ecirc;ncias operacionais.</p></div>
+        <div id="openCards" class="cards-list fill-list"></div>
+      </section>
+
+      <section id="newView" class="view hidden">
+        <div class="section-title"><h2>Nova NC</h2><p>Cadastro r&aacute;pido.</p></div>
+        <form id="ncForm" class="form-card" onsubmit="submitNC(event)">
+          <label>Grupo<select id="grupo" onchange="onGrupoChange()"></select></label>
+          <label>C&oacute;digo / defeito<select id="codigo"></select></label>
+          <label>Setor<select id="setor"></select></label>
+          <label>Produto<input id="produto" type="text" placeholder="Ex.: CAM-001"></label>
+          <label>OP<input id="op" type="text" placeholder="Opcional"></label>
+          <label>Quantidade afetada<input id="qtdAfetada" type="number" inputmode="numeric" min="0"></label>
+          <label>Conferente<select id="conferente"></select></label>
+          <label>Operador<select id="operador"></select></label>
+          <label>Cliente<input id="cliente" type="text" placeholder="Opcional"></label>
+          
+          <div class="wide-field field-block observation-field">
+            <div class="field-heading observation-heading">
+              <label for="descricao">Observa&ccedil;&otilde;es Gerais</label>
+              <div class="voice-actions">
+                <button id="voiceButton" class="voice-button ptt-button" data-input="descricao" type="button" title="Segure para falar">&#127908; Segure para Falar</button>
+                <button id="voiceClearButton" class="voice-clear-button" type="button">Limpar</button>
+              </div>
+            </div>
+            <textarea id="descricao" rows="4" placeholder="Descreva a n&atilde;o conformidade ou use o microfone."></textarea>
+            <span id="voiceStatus" class="voice-status" aria-live="polite"></span>
+          </div>
+
+          <div class="section-subtitle">Evid&ecirc;ncias (Fotos e Notas)</div>
+
+          <div class="evidence-card">
+            <label class="upload-btn">
+              <input id="imagem1" type="file" accept="image/*" capture="environment" onchange="handleImageEvidence(this, 'preview1', 'notaBox1')">
+              &#128247; Fotografar Defeito 1
+            </label>
+            <div id="notaBox1" class="nota-box hidden">
+              <img id="preview1" class="evidence-preview">
+              <div class="note-input-group">
+                <input id="nota1" type="text" placeholder="O que h&aacute; de errado nesta foto?">
+                <button type="button" id="btnVoiceNota1" class="voice-icon-btn ptt-button" data-input="nota1" title="Segure para falar">&#127908;</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="evidence-card">
+            <label class="upload-btn">
+              <input id="imagem2" type="file" accept="image/*" capture="environment" onchange="handleImageEvidence(this, 'preview2', 'notaBox2')">
+              &#128247; Fotografar Defeito 2
+            </label>
+            <div id="notaBox2" class="nota-box hidden">
+              <img id="preview2" class="evidence-preview">
+              <div class="note-input-group">
+                <input id="nota2" type="text" placeholder="O que h&aacute; de errado nesta foto?">
+                <button type="button" id="btnVoiceNota2" class="voice-icon-btn ptt-button" data-input="nota2" title="Segure para falar">&#127908;</button>
+              </div>
+            </div>
+          </div>
+
+          <button id="saveButton" class="primary-button" type="submit">Salvar NC</button>
+        </form>
+      </section>
+
+      <section id="consultView" class="view hidden">
+        <div class="section-title"><h2>Consultar</h2><p>Busque por ID, produto, OP, defeito, setor ou status.</p></div>
+        <input id="searchInput" class="search-input" type="search" placeholder="Buscar NC" oninput="renderConsult()">
+        <div id="consultCards" class="cards-list fill-list"></div>
+      </section>
+    </main>
+    <nav class="bottom-nav">
+      <button id="navDashboard" class="active" type="button" data-view="dashboard"><span>&#8962;</span>In&iacute;cio</button>
+      <button id="navNew" type="button" data-view="new"><span>&#43;</span>Nova</button>
+      <button id="navConsult" type="button" data-view="consult"><span>&#8981;</span>Consulta</button>
+    </nav>
+  </div>
+  <div id="loading" class="loading"><div class="spinner"></div><p>Carregando...</p></div>
+
+  <!-- JAVASCRIPT (Antigo Client.html + FETCH API) -->
+  <script>
+    
+    const API_URL = https://script.google.com/macros/s/AKfycbw2iB9EHZYC69pFphS0_zzD0Ts15WgvtxZKy3LPEzRysSQQfBYvHIvRRPiQyw2rIBMU/exec; 
+
+    let state = { registros: [], codigos: [], listas: {}, status: [], activeView: 'dashboard' };
+    const DEFAULT_STATUS = ['ABERTA', 'EM_ANALISE', 'EM_ACAO', 'ENCERRADA', 'CANCELADA'];
+    const MAX_INPUT_IMAGE_BYTES = 12 * 1024 * 1024;
+    const MAX_IMAGE_SIDE = 1600;
+    const JPEG_QUALITY = 0.75;
+    
+    let speechRecognition = null;
+    let speechListening = false;
+    let speechBaseText = '';
+    let speechFinalText = '';
+    let speechSupported = false;
+    let isHoldingPtt = false;
+    let currentVoiceInputId = 'descricao'; 
+    let currentVoiceBtnId = 'voiceButton';
+
+    document.addEventListener('DOMContentLoaded', function() {
+      bindNavigation();
+      bindVoiceInput();
+      bindPTTButtons();
+      reloadData();
+    });
+
+    function setLoading(active) {
+      const loading = document.getElementById('loading');
+      if (!loading) return;
+      if (active) { loading.classList.remove('hidden'); loading.classList.add('active'); } 
+      else { loading.classList.remove('active'); loading.classList.add('hidden'); }
+    }
+
+    function showAlert(message, type) {
+      const el = document.getElementById('alert');
+      if (!el) return;
+      if (!message) { el.className = 'alert hidden'; el.textContent = ''; return; }
+      el.className = 'alert ' + (type || ''); el.textContent = message; el.classList.remove('hidden');
+      setTimeout(() => { el.className = 'alert hidden'; el.textContent = ''; }, 5000);
+    }
+
+    // --- NOVA CHAMADA PARA A API DO GOOGLE APPS SCRIPT ---
+    async function reloadData() {
+      setLoading(true);
+      try {
+        const res = await fetch(API_URL + '?action=getInitialData');
+        const response = await res.json();
+        setLoading(false);
+        if (!response || !response.ok) { showAlert(response?.message || 'Erro ao carregar dados.', 'error'); return; }
+        state.registros = response.registros || [];
+        state.codigos = response.codigos || [];
+        state.listas = response.listas || {};
+        state.status = response.status?.length ? response.status.slice() : DEFAULT_STATUS.slice();
+        populateFormOptions();
+        renderActiveView();
+      } catch (error) {
+        setLoading(false); showAlert(String(error), 'error');
+      }
+    }
+
+    function populateFormOptions() {
+      const grupos = unique(state.codigos.map(item => String(item.grupo || '').trim()).filter(Boolean));
+      fillSelect('grupo', grupos, true); fillSelect('codigo', [], true);
+      fillSelect('setor', state.listas.setores || [], true);
+      fillSelect('conferente', state.listas.conferentes || [], true);
+      fillSelect('operador', state.listas.operadores || [], true);
+    }
+
+    function fillSelect(id, values, includeEmpty) {
+      const select = document.getElementById(id);
+      if (!select) return;
+      const current = String(select.value || '').trim();
+      select.innerHTML = '';
+      if (includeEmpty) { const empty = document.createElement('option'); empty.value = ''; empty.textContent = 'Selecione'; select.appendChild(empty); }
+      values.forEach(value => {
+        const text = String(value || '').trim();
+        if (!text) return;
+        const option = document.createElement('option'); option.value = text; option.textContent = text; select.appendChild(option);
+      });
+      if (current) select.value = current;
+    }
+
+    function onGrupoChange() {
+      const grupoSelect = document.getElementById('grupo');
+      const codigoSelect = document.getElementById('codigo');
+      if (!grupoSelect || !codigoSelect) return;
+      const grupo = String(grupoSelect.value || '').trim();
+      codigoSelect.innerHTML = '';
+      const empty = document.createElement('option'); empty.value = ''; empty.textContent = 'Selecione'; codigoSelect.appendChild(empty);
+      if (!grupo) return;
+      state.codigos.filter(item => String(item.grupo || '').trim() === grupo).forEach(item => {
+        const codigo = String(item.codigo || '').trim(); const tipo = String(item.tipo || '').trim();
+        if (!codigo) return;
+        const option = document.createElement('option'); option.value = codigo; option.textContent = codigo + ' - ' + tipo; codigoSelect.appendChild(option);
+      });
+    }
+
+    function showView(view) {
+      state.activeView = view;
+      ['dashboard', 'new', 'consult'].forEach(v => {
+        const el = document.getElementById(v + 'View');
+        const nav = document.getElementById('nav' + v.charAt(0).toUpperCase() + v.slice(1));
+        if (el) el.classList.toggle('hidden', view !== v);
+        if (nav) nav.classList.toggle('active', view === v);
+      });
+      renderActiveView();
+    }
+
+    function bindNavigation() {
+      document.querySelectorAll('.bottom-nav [data-view]').forEach(button => {
+        button.addEventListener('click', e => { e.preventDefault(); showView(button.getAttribute('data-view')); });
+        button.addEventListener('touchend', e => { e.preventDefault(); showView(button.getAttribute('data-view')); }, { passive: false });
+      });
+      const reloadBtn = document.querySelector('[data-action="reload"]');
+      if (reloadBtn) reloadBtn.addEventListener('click', e => { e.preventDefault(); reloadData(); });
+    }
+
+    function bindPTTButtons() {
+      document.querySelectorAll('.ptt-button').forEach(btn => {
+        const inputId = btn.getAttribute('data-input'); const btnId = btn.id;
+        btn.addEventListener('contextmenu', e => e.preventDefault());
+        btn.addEventListener('pointerdown', e => {
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          try { btn.setPointerCapture(e.pointerId); } catch(err){}
+          startPushToTalk(inputId, btnId);
+        });
+        btn.addEventListener('pointerup', e => { try { btn.releasePointerCapture(e.pointerId); } catch(err){} stopPushToTalk(); });
+        btn.addEventListener('pointercancel', e => stopPushToTalk());
+      });
+    }
+
+    function startPushToTalk(inputId, btnId) {
+      if (!speechSupported || !speechRecognition) { showAlert('Voz indisponível.', 'error'); return; }
+      isHoldingPtt = true; currentVoiceInputId = inputId; currentVoiceBtnId = btnId;
+      const btn = document.getElementById(btnId); if (btn) btn.classList.add('preparing');
+      if (!speechListening) try { speechRecognition.start(); } catch(e) {}
+    }
+
+    function stopPushToTalk() {
+      isHoldingPtt = false;
+      document.querySelectorAll('.ptt-button').forEach(b => b.classList.remove('preparing'));
+      if (speechListening && speechRecognition) try { speechRecognition.stop(); } catch(e) {}
+    }
+
+    function bindVoiceInput() {
+      const clearBtn = document.getElementById('voiceClearButton');
+      const textarea = document.getElementById('descricao');
+      if (textarea) textarea.addEventListener('input', updateObservationCounter);
+      if (clearBtn) {
+        clearBtn.addEventListener('click', e => {
+          e.preventDefault();
+          if (speechListening && speechRecognition) speechRecognition.stop();
+          if (textarea) { textarea.value = ''; textarea.focus(); updateObservationCounter(); setVoiceState('Apagado.', false); }
+        });
+      }
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        speechSupported = false;
+        document.querySelectorAll('.ptt-button').forEach(btn => { btn.disabled = true; btn.title = 'Indisponível'; });
+        return;
+      }
+
+      speechSupported = true;
+      speechRecognition = new SpeechRecognition();
+      speechRecognition.lang = 'pt-BR'; speechRecognition.continuous = true; speechRecognition.interimResults = true; speechRecognition.maxAlternatives = 1;
+
+      speechRecognition.onstart = function() {
+        const btn = document.getElementById(currentVoiceBtnId);
+        if (btn) btn.classList.remove('preparing');
+        if (!isHoldingPtt) { try { speechRecognition.stop(); } catch(e){} return; }
+        speechListening = true; speechBaseText = getValue(currentVoiceInputId); speechFinalText = '';
+        if (btn) { btn.classList.add('listening'); if (currentVoiceBtnId === 'voiceButton') btn.textContent = 'Ouvindo...'; }
+        if (currentVoiceInputId === 'descricao') setVoiceState('Ouvindo...', true);
+      };
+      speechRecognition.onresult = function(event) {
+        let interimText = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = String(event.results[i][0].transcript || '').trim();
+          if (!transcript) continue;
+          if (event.results[i].isFinal) speechFinalText = joinTextParts(speechFinalText, transcript);
+          else interimText = joinTextParts(interimText, transcript);
+        }
+        applySpeechText(interimText);
+      };
+      speechRecognition.onerror = function(event) {
+        if (currentVoiceInputId === 'descricao') setVoiceState('Não foi possível ouvir.', false);
+      };
+      speechRecognition.onend = function() {
+        speechListening = false; applySpeechText('');
+        if (!isHoldingPtt) {
+          const btn = document.getElementById(currentVoiceBtnId);
+          if (btn) { btn.classList.remove('listening', 'preparing'); if (currentVoiceBtnId === 'voiceButton') btn.textContent = '🎙️ Segure para Falar'; }
+          if (currentVoiceInputId === 'descricao') setVoiceState('', false);
+        } else {
+          try { speechRecognition.start(); } catch(e){}
+        }
+      };
+    }
+
+    function applySpeechText(interimText) {
+      const input = document.getElementById(currentVoiceInputId);
+      if (!input) return;
+      input.value = joinTextParts(speechBaseText, joinTextParts(speechFinalText, interimText));
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function joinTextParts(base, addition) {
+      const cb = String(base || '').replace(/\s+/g, ' ').trim();
+      const ca = String(addition || '').replace(/\s+/g, ' ').trim();
+      if (!cb) return capitalizeFirst_(ca); if (!ca) return cb; return cb + ' ' + ca;
+    }
+
+    function setVoiceState(msg) {
+      const status = document.getElementById('voiceStatus');
+      if (status) status.textContent = [msg || '', getObservationCounterText()].filter(Boolean).join(' · ');
+    }
+    function updateObservationCounter() { setVoiceState(''); }
+    function getObservationCounterText() { const len = getValue('descricao').length; return len ? len + ' caracteres' : '0 caracteres'; }
+
+    function handleImageEvidence(input, previewId, notaBoxId) {
+      const preview = document.getElementById(previewId); const notaBox = document.getElementById(notaBoxId);
+      if (!input.files || !input.files[0]) { notaBox.classList.add('hidden'); preview.src = ''; return; }
+      const file = input.files[0];
+      if (!file.type.startsWith('image/')) { showAlert('Apenas imagens.', 'error'); input.value = ''; return; }
+      const reader = new FileReader();
+      reader.onload = e => { preview.src = e.target.result; notaBox.classList.remove('hidden'); };
+      reader.readAsDataURL(file);
+    }
+    function clearImagePreviews() {
+      ['preview1', 'preview2'].forEach(id => { const el = document.getElementById(id); if (el) el.src = ''; });
+      ['notaBox1', 'notaBox2'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+      ['nota1', 'nota2'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    }
+
+    function renderActiveView() {
+      if (state.activeView === 'dashboard') renderDashboard();
+      if (state.activeView === 'consult') renderConsult();
+    }
+    function renderDashboard() {
+      const abertas = state.registros.filter(r => String(r.status) === 'ABERTA');
+      const encerradas = state.registros.filter(r => String(r.status) === 'ENCERRADA');
+      setText('statAbertas', abertas.length); setText('statEncerradas', encerradas.length);
+      setText('statQtd', state.registros.reduce((sum, r) => sum + Number(r.qtdAfetada || 0), 0)); setText('statTotal', state.registros.length);
+      const container = document.getElementById('openCards'); if (!container) return;
+      container.innerHTML = abertas.length ? abertas.map(renderRegistroCard).join('') : '<div class="empty">Nenhuma aberta.</div>';
+    }
+    function renderConsult() {
+      const termo = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+      let regs = state.registros;
+      if (termo) regs = regs.filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(termo)));
+      const container = document.getElementById('consultCards'); if (!container) return;
+      container.innerHTML = regs.length ? regs.map(renderRegistroCard).join('') : '<div class="empty">Nenhum resultado.</div>';
+    }
+
+    function renderRegistroCard(r) {
+      const statusAtual = r.status || 'ABERTA';
+      const options = getStatusOptions(statusAtual).map(s => `<option value="${escapeAttr(s)}" ${s===statusAtual?'selected':''}>${escapeHtml(s)}</option>`).join('');
+      let imgs = '';
+      if (r.imagem1) imgs += `<a href="${escapeAttr(r.imagem1)}" target="_blank">Foto 1${r.nota1 ? ' ('+escapeHtml(r.nota1)+')' : ''}</a>`;
+      if (r.imagem2) imgs += `<a href="${escapeAttr(r.imagem2)}" target="_blank">Foto 2${r.nota2 ? ' ('+escapeHtml(r.nota2)+')' : ''}</a>`;
+      return `
+        <article class="nc-card">
+          <div class="nc-card-header">
+            <div><h3>${escapeHtml(r.id || '-')}</h3><p class="tipo">${escapeHtml(r.tipo || '-')}</p></div>
+            <span class="badge ${statusClass(statusAtual)}">${escapeHtml(statusAtual)}</span>
+          </div>
+          <div class="info-grid">
+            ${infoBox('Grupo', r.grupo)} ${infoBox('Setor', r.setor)} ${infoBox('Produto', r.produto)}
+            ${infoBox('OP', r.op)} ${infoBox('Qtd.', r.qtdAfetada)} ${infoBox('Data', r.dataAbertura)}
+          </div>
+          ${r.descricao ? '<p class="description">'+escapeHtml(r.descricao)+'</p>' : ''}
+          ${imgs ? '<div class="image-links">'+imgs+'</div>' : ''}
+          <select class="status-select" onchange="changeStatus('${escapeAttr(r.id)}', this.value)">${options}</select>
+        </article>
+      `;
+    }
+
+    function getStatusOptions(cs) { const o = state.status.length ? state.status.slice() : DEFAULT_STATUS.slice(); if (cs && !o.includes(cs)) o.unshift(cs); return o; }
+    function infoBox(l, v) { return `<div class="info-box"><small>${escapeHtml(l)}</small><strong>${escapeHtml(v || '-')}</strong></div>`; }
+
+    // --- NOVO MÉTODO DE ENVIO (POST VIA FETCH) ---
+    async function submitNC(event) {
+      event.preventDefault();
+      const codSel = getSelectedCodigo();
+      if (!codSel) { showAlert('Selecione um código.', 'error'); return; }
+
+      const payload = {
+        grupo: String(codSel.grupo || '').trim(), codigo: String(codSel.codigo || '').trim(), tipo: String(codSel.tipo || '').trim(),
+        setor: getValue('setor'), produto: getValue('produto'), op: getValue('op'), qtdAfetada: Number(getValue('qtdAfetada') || 0),
+        cliente: getValue('cliente'), descricao: getValue('descricao'), conferente: getValue('conferente'), operador: getValue('operador'),
+        nota1: getValue('nota1'), nota2: getValue('nota2'), imagem1: null, imagem2: null, imagens: []
+      };
+
+      if (!payload.setor || !payload.produto || payload.qtdAfetada <= 0) { showAlert('Preencha os campos obrigatórios.', 'error'); return; }
+
+      setLoading(true); document.getElementById('saveButton').disabled = true;
+
+      try {
+        const imagens = await readSelectedImages();
+        payload.imagens = imagens; payload.imagem1 = imagens[0] || null; payload.imagem2 = imagens[1] || null;
+        
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'createNC', data: payload })
+        });
+        
+        const response = await res.json();
+        setLoading(false); document.getElementById('saveButton').disabled = false;
+        
+        if (!response.ok) { showAlert(response.message || 'Erro.', 'error'); return; }
+        
+        document.getElementById('ncForm').reset(); clearImagePreviews(); populateFormOptions();
+        addOrReplaceRegistro(response.registro); showAlert('Sucesso.', 'success'); showView('consult');
+      } catch (error) {
+        setLoading(false); document.getElementById('saveButton').disabled = false; showAlert(String(error), 'error');
+      }
+    }
+
+    // --- NOVO MÉTODO DE ATUALIZAÇÃO (POST VIA FETCH) ---
+    async function changeStatus(id, status) {
+      if (!id || !status) return;
+      setLoading(true);
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'updateStatus', data: { id, status } })
+        });
+        const response = await res.json();
+        setLoading(false);
+        if (!response.ok) { showAlert(response.message, 'error'); reloadData(); return; }
+        const r = state.registros.find(item => item.id === (response.id || id));
+        if (r) { r.status = response.status || status; r.dataEncerramento = response.dataEncerramento || ''; }
+        showAlert('Status atualizado.', 'success'); renderActiveView();
+      } catch (error) {
+        setLoading(false); showAlert(String(error), 'error'); reloadData();
+      }
+    }
+
+    function addOrReplaceRegistro(r) { if (!r || !r.id) return; const i = state.registros.findIndex(item => item.id === r.id); if (i === -1) state.registros.unshift(r); else state.registros[i] = r; }
+    function readSelectedImages() { return Promise.all(['imagem1', 'imagem2'].map(id => document.getElementById(id)?.files?.[0]).filter(Boolean).map(readImageFile)); }
+    async function readImageFile(file) {
+      if (!file.type.startsWith('image/')) throw new Error('Apenas imagens.');
+      if (file.size > MAX_INPUT_IMAGE_BYTES) throw new Error('Máx 12 MB.');
+      return new Promise((resolve, reject) => {
+        const r = new FileReader(); r.onerror = () => reject(new Error('Erro'));
+        r.onload = () => {
+          const img = new Image(); img.onerror = () => reject(new Error('Erro img'));
+          img.onload = () => {
+            const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(img.width, img.height));
+            const w = Math.max(1, Math.round(img.width * scale)); const h = Math.max(1, Math.round(img.height * scale));
+            const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve({ name: file.name.replace(/\.[^.]+$/, '.jpg'), mimeType: 'image/jpeg', type: 'image/jpeg', dataUrl: canvas.toDataURL('image/jpeg', JPEG_QUALITY) });
+          };
+          img.src = String(r.result);
+        };
+        r.readAsDataURL(file);
+      });
+    }
+
+    function getSelectedCodigo() { const cod = getValue('codigo'); return cod ? state.codigos.find(i => String(i.codigo || '').trim() === cod) : null; }
+    function getValue(id) { const el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; }
+    function unique(v) { const s = {}; const r = []; v.forEach(i => { const k = String(i || '').trim(); if (k && !s[k]) { s[k] = true; r.push(k); } }); return r; }
+    function capitalizeFirst_(v) { return String(v || '').replace(/^./, l => l.toUpperCase()); }
+    function statusClass(s) { return 'status-' + String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '_').toUpperCase(); }
+    function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+    function escapeHtml(v) { return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;"); }
+    function escapeAttr(v) { return escapeHtml(v).replaceAll('`','&#096;'); }
+  </script>
+</body>
+</html>
